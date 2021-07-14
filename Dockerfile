@@ -1,4 +1,4 @@
-FROM golang:1.15.12 as builder
+FROM golang:1.16.3 as builder
 
 WORKDIR /go/src/github.com/IBM/ibm-vpc-block-csi-driver-operator
 ADD . /go/src/github.com/IBM/ibm-vpc-block-csi-driver-operator

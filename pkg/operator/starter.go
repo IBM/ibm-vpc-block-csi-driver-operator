@@ -19,7 +19,7 @@ import (
 	goc "github.com/openshift/library-go/pkg/operator/genericoperatorclient"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 
-	"github.com/IBM/ibm-vpc-block-csi-driver-operator/pkg/generated"
+	"github.com/IBM/ibm-vpc-block-csi-driver-operator/assets"
 )
 
 const (
@@ -57,7 +57,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		"IBMBlockDriverStaticResourcesController",
 		kubeClient,
 		kubeInformersForNamespaces,
-		generated.Asset,
+		assets.Asset,
 		[]string{
 			"configmap.yaml",
 			"controller_sa.yaml",
@@ -78,7 +78,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		configInformers,
 	).WithCSIDriverControllerService(
 		"IBMBlockDriverControllerServiceController",
-		generated.MustAsset,
+		assets.MustAsset,
 		"controller.yaml",
 		kubeClient,
 		kubeInformersForNamespaces.InformersFor(defaultNamespace),
@@ -86,7 +86,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		csidrivercontrollerservicecontroller.WithObservedProxyDeploymentHook(),
 	).WithCSIDriverNodeService(
 		"IBMBlockDriverNodeServiceController",
-		generated.MustAsset,
+		assets.MustAsset,
 		"node.yaml",
 		kubeClient,
 		kubeInformersForNamespaces.InformersFor(defaultNamespace),
