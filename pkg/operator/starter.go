@@ -3,6 +3,8 @@ package operator
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/library-go/pkg/controller/factory"
+	"k8s.io/client-go/dynamic"
 	"time"
 
 	kubeclient "k8s.io/client-go/kubernetes"
@@ -35,6 +37,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	kubeClient := kubeclient.NewForConfigOrDie(rest.AddUserAgent(controllerConfig.KubeConfig, operatorName))
 	kubeInformersForNamespaces := v1helpers.NewKubeInformersForNamespaces(kubeClient, defaultNamespace, "")
 	secretInformer := kubeInformersForNamespaces.InformersFor(defaultNamespace).Core().V1().Secrets()
+	nodeInformer := kubeInformersForNamespaces.InformersFor("").Core().V1().Nodes()
 
 	// Create config clientset and informer. This is used to get the cluster ID
 	configClient := configclient.NewForConfigOrDie(rest.AddUserAgent(controllerConfig.KubeConfig, operatorName))
@@ -43,6 +46,11 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	// Create GenericOperatorclient. This is used by the library-go controllers created down below
 	gvr := opv1.GroupVersion.WithResource("clustercsidrivers")
 	operatorClient, dynamicInformers, err := goc.NewClusterScopedOperatorClientWithConfigName(controllerConfig.KubeConfig, gvr, instanceName)
+	if err != nil {
+		return err
+	}
+
+	dynamicClient, err := dynamic.NewForConfig(controllerConfig.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -56,8 +64,9 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	).WithStaticResourcesController(
 		"IBMBlockDriverStaticResourcesController",
 		kubeClient,
+		dynamicClient,
 		kubeInformersForNamespaces,
-		assets.Asset,
+		assets.ReadFile,
 		[]string{
 			"configmap.yaml",
 			"controller_sa.yaml",
@@ -78,20 +87,25 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		configInformers,
 	).WithCSIDriverControllerService(
 		"IBMBlockDriverControllerServiceController",
-		assets.MustAsset,
+		assets.ReadFile,
 		"controller.yaml",
 		kubeClient,
 		kubeInformersForNamespaces.InformersFor(defaultNamespace),
 		configInformers,
+		[]factory.Informer{
+			nodeInformer.Informer(),
+			secretInformer.Informer(),
+		},
 		csidrivercontrollerservicecontroller.WithObservedProxyDeploymentHook(),
 	).WithCSIDriverNodeService(
 		"IBMBlockDriverNodeServiceController",
-		assets.MustAsset,
+		assets.ReadFile,
 		"node.yaml",
 		kubeClient,
 		kubeInformersForNamespaces.InformersFor(defaultNamespace),
+		nil,
 		csidrivernodeservicecontroller.WithObservedProxyDaemonSetHook(),
-	).WithExtraInformers(secretInformer.Informer())
+	)
 
 	if err != nil {
 		return err
