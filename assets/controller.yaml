@@ -20,6 +20,30 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000160009
       containers:
+        - name: csi-provisioner
+          image: ${RESIZER_IMAGE}
+          imagePullPolicy: Always
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+          args:
+           - "--v=5"
+           - "--csi-address=$(ADDRESS)"
+           - "--timeout=600s"
+           - "--feature-gates=Topology=true"
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+           resources:
+             limits:
+               cpu: 80m
+               memory: 160Mi
+             requests:
+               cpu: 20m
+               memory: 40Mi
+           volumeMounts:
+             - name: socket-dir
+               mountPath: /csi
         - args:
             - --v=5
             - --csi-address=$(ADDRESS)
