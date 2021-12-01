@@ -74,6 +74,8 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 			"rbac/registrar_role.yaml",
 			"rbac/resizer_role.yaml",
 			"rbac/resizer_rolebinding.yaml",
+			"rbac/initcontainer_role.yaml",
+			"rbac/initcontainer_rolebinding.yaml",
 			"storageclass/vpc-block-10iopsTier-StorageClass.yaml",
 			"storageclass/vpc-block-5iopsTier-StorageClass.yaml",
 			"storageclass/vpc-block-custom-StorageClass.yaml",

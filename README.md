@@ -42,6 +42,7 @@ export ATTACHER_IMAGE=k8s.gcr.io/sig-storage/csi-attacher:v3.2.1
 export NODE_DRIVER_REGISTRAR_IMAGE=k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.2.0
 export LIVENESS_PROBE_IMAGE=k8s.gcr.io/sig-storage/livenessprobe:v2.3.0
 export RESIZER_IMAGE=k8s.gcr.io/sig-storage/csi-resizer:v1.2.0
+export NODE_LABEL_IMAGE="icr.io/obs/storage/vpc-node-label-updater:v1.0.1"
 
 # Run the operator via CLI
 ./ibm-vpc-block-csi-driver-operator start --kubeconfig $MY_KUBECONFIG --namespace openshift-cluster-csi-drivers
