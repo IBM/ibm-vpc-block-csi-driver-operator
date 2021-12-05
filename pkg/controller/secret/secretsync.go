@@ -39,6 +39,8 @@ const (
 	CloudConfigmapKey = "cloud.conf"
 	// Name of the key in secret storage-secret-store creating on operator namespace
 	StorageSecretStoreKey = "slclient.toml"
+	//Resource manager URL
+	ResourceManagerURL = "https://resource-controller.cloud.ibm.com"
 
 	// storage-secret-store data format
 	StorageSecretTomlTemplate = `[vpc]
@@ -110,7 +112,7 @@ func (c *SecretSyncController) sync(ctx context.Context, syncCtx factory.SyncCon
 	}
 
 	// Get the storage-secret-store secret to be created from ibm-cloud-credential secret and clod-conf configmap
-	driverSecret, err := c.translateSecret(cloudSecret, cloudConfConfigMap)
+	driverSecret, err := c.translateSecret(cloudSecret, cloudConfConfigMap, getResourceID)
 	if err != nil {
 		klog.V(2).ErrorS(err, "Error while extracting data from secret/cm")
 		return err
@@ -124,7 +126,10 @@ func (c *SecretSyncController) sync(ctx context.Context, syncCtx factory.SyncCon
 	return nil
 }
 
-func (c *SecretSyncController) translateSecret(cloudSecret *v1.Secret, cloudConf *v1.ConfigMap) (*v1.Secret, error) {
+func (c *SecretSyncController) translateSecret(
+		cloudSecret *v1.Secret,
+		cloudConf *v1.ConfigMap,
+		getResourceID func(resourceName, accountID, apiKey string) (string, error)) (*v1.Secret, error) {
 	apiKey, ok := cloudSecret.Data[cloudSecretKey]
 	if !ok {
 		return nil, fmt.Errorf("cloud-credential-operator secret %s did not contain key %s", util.CloudCredentialSecretName, cloudSecretKey)
@@ -182,7 +187,7 @@ func (c *SecretSyncController) translateSecret(cloudSecret *v1.Secret, cloudConf
 
 func getResourceID(resourceName, accountID, apiKey string) (string, error) {
 	serviceClientOptions := &resourcemanagerv2.ResourceManagerV2Options{
-		URL:           "https://resource-controller.cloud.ibm.com",
+		URL:           ResourceManagerURL,
 		Authenticator: &core.IamAuthenticator{ApiKey: apiKey},
 	}
 	serviceClient, err := resourcemanagerv2.NewResourceManagerV2UsingExternalConfig(serviceClientOptions)

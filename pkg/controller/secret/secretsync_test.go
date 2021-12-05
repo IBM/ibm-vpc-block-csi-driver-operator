@@ -1,7 +1,7 @@
 package secret
 
 import (
-	"bou.ke/monkey"
+	"errors"
 	"fmt"
 	"github.com/IBM/ibm-vpc-block-csi-driver-operator/pkg/util"
 	k8v1 "k8s.io/api/core/v1"
@@ -19,6 +19,7 @@ func TestTranslateSecretError(t *testing.T) {
 	type args struct {
 		cloudSecret *k8v1.Secret
 		cloudConf   *k8v1.ConfigMap
+		getResourceIDFunc func(resourceName, accountID, apiKey string) (string, error)
 	}
 	tests := []struct {
 		name    string
@@ -39,6 +40,7 @@ func TestTranslateSecretError(t *testing.T) {
 						Namespace: cmNamespace,
 					},
 				},
+				getResourceIDFunc: nil,
 			},
 		}, {
 			name: "Empty configmap",
@@ -56,6 +58,7 @@ func TestTranslateSecretError(t *testing.T) {
 						Namespace: cmNamespace,
 					},
 				},
+				getResourceIDFunc: nil,
 			},
 		}, {
 			name: "Empty region",
@@ -74,6 +77,7 @@ func TestTranslateSecretError(t *testing.T) {
 					},
 					Data: map[string]string{CloudConfigmapKey: "cm-data"},
 				},
+				getResourceIDFunc: nil,
 			},
 		}, {
 			name: "Empty ResourceGroupName",
@@ -92,6 +96,7 @@ func TestTranslateSecretError(t *testing.T) {
 					},
 					Data: map[string]string{CloudConfigmapKey: "region = region1\n"},
 				},
+				getResourceIDFunc: nil,
 			},
 		}, {
 			name: "Empty accountID",
@@ -110,6 +115,7 @@ func TestTranslateSecretError(t *testing.T) {
 					},
 					Data: map[string]string{CloudConfigmapKey: "region = region1\ng2ResourceGroupName = testresource\n"},
 				},
+				getResourceIDFunc: nil,
 			},
 		}, {
 			name: "Error getting resource ID",
@@ -128,12 +134,13 @@ func TestTranslateSecretError(t *testing.T) {
 					},
 					Data: map[string]string{CloudConfigmapKey: "region = region1\ng2ResourceGroupName = testresource\naccountID = testaccount\n"},
 				},
+				getResourceIDFunc: func(resourceName, accountID, apiKey string) (string, error) { return "", errors.New("test err")},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.translateSecret(tt.args.cloudSecret, tt.args.cloudConf)
+			got, err := c.translateSecret(tt.args.cloudSecret, tt.args.cloudConf, tt.args.getResourceIDFunc)
 			if err == nil {
 				t.Errorf("translateSecret() no error returned %v", err)
 				return
@@ -181,10 +188,9 @@ func TestTranslateSecretSuccess(t *testing.T) {
 				},
 				Data: map[string]string{CloudConfigmapKey: "region = region1\ng2ResourceGroupName = testresource\naccountID = testaccount\n"},
 		}
-	monkey.Patch(getResourceID, func(resourceName, accountID, apiKey string) (string, error) {
-		return resourceId, nil
-	})
-	got, err := c.translateSecret(cloudSecret, cloudConf)
+
+	fn := func(resourceName, accountID, apiKey string) (string, error) { return resourceId, nil}
+	got, err := c.translateSecret(cloudSecret, cloudConf, fn)
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("translateSecret() got = %v, want %v", *got, *want)
