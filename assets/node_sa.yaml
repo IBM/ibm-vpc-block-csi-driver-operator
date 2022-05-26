@@ -4,6 +4,7 @@ imagePullSecrets:
   - name: bluemix-default-secret-regional
   - name: bluemix-default-secret-international
   - name: icr-io-secret
+  - name: gunakkimagepull
 kind: ServiceAccount
 metadata:
   annotations:
