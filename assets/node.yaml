@@ -117,6 +117,8 @@ spec:
             runAsUser: 0
             privileged: true
           volumeMounts:
+            - mountPath: /var/run/secrets/tokens
+              name: vault-token
             - mountPath: /var/lib/kubelet
               mountPropagation: Bidirectional
               name: kubelet-data-dir
@@ -157,6 +159,12 @@ spec:
       tolerations:
         - operator: Exists
       volumes:
+        - name: vault-token
+          projected:
+            sources:
+            - serviceAccountToken:
+                path: vault-token
+                expirationSeconds: 600
         - hostPath:
             path: /var/lib/kubelet/plugins_registry/
             type: Directory
